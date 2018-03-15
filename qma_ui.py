@@ -12,6 +12,7 @@ from lxml import etree
 from kivy.app import App
 from kivy.lang import Builder
 from kivy.uix.boxlayout import BoxLayout
+from kivy.core.window import Window
 from kivy.uix.scrollview import ScrollView
 from kivy.uix.label import Label
 from kivy.uix.image import Image
@@ -148,6 +149,7 @@ class QueueApp(App):
             self.wips_container.update()
 
     def build(self):
+        Window.clearcolor = (.6, .6, .6, 1)
         root = BoxLayout()
         self.wips_container = WipContainer(self,
                                            self.wips,
