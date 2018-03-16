@@ -12,7 +12,6 @@ from lxml import etree
 from kivy.app import App
 from kivy.lang import Builder
 from kivy.uix.boxlayout import BoxLayout
-from kivy.core.window import Window
 from kivy.uix.scrollview import ScrollView
 from kivy.uix.label import Label
 from kivy.uix.image import Image
@@ -47,10 +46,10 @@ class WipItem(BoxLayout):
         self.add_widget(self.image_project_dimensions)
         self.add_widget(self.image_project_overview)
         #self.add_widget(Label(text=str(self.wip.project)))
-        overview = visualizations.project_overview(self.wip.project, 500, 200, orientation='horizontal', color_key=True)[1]
+        overview = visualizations.project_overview(self.wip.project, 500, 200, orientation='horizontal', color_key=True, background_color=(50, 50, 50, 255))[1]
         self.image_project_overview.texture = CoreImage(overview, ext="jpg", keep_data=True).texture
 
-        dimensions = visualizations.project_dimensions(self.wip.project, 500, 150, scale=5)[1]
+        dimensions = visualizations.project_dimensions(self.wip.project, 500, 150, scale=5, background_color=(50, 50, 50, 255))[1]
         self.image_project_dimensions.texture = CoreImage(dimensions, ext="jpg", keep_data=True).texture
 
 @attr.s
@@ -149,7 +148,6 @@ class QueueApp(App):
             self.wips_container.update()
 
     def build(self):
-        Window.clearcolor = (.6, .6, .6, 1)
         root = BoxLayout()
         self.wips_container = WipContainer(self,
                                            self.wips,
