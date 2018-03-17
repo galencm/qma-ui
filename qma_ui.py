@@ -15,6 +15,7 @@ from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.scrollview import ScrollView
 from kivy.uix.label import Label
 from kivy.uix.image import Image
+from kivy.uix.tabbedpanel import TabbedPanel, TabbedPanelItem
 from kivy.core.image import Image as CoreImage
 from kivy.clock import Clock
 from ma_cli import data_models
@@ -59,7 +60,6 @@ class WipSet(object):
     def add(self, xml):
         xml_hash =  hashlib.sha224(xml.encode()).hexdigest()
         self.wips[xml_hash] = self.load_project_xml(xml)
-        print(self.wips)
 
     def load_project_xml(self, xml):
         w = Wip()
@@ -135,6 +135,13 @@ class Wip(object):
         # palette, expected, etc...
         pass
 
+class SettingsContainer(BoxLayout):
+    def __init__(self, app, **kwargs):
+        self.app = app
+        super(SettingsContainer, self).__init__(**kwargs)
+
+    # launcher
+
 class QueueApp(App):
     def __init__(self, *args,**kwargs):
         self.queued = {}
@@ -149,6 +156,9 @@ class QueueApp(App):
 
     def build(self):
         root = BoxLayout()
+        root = TabbedPanel(do_default_tab=False)
+        root.tab_width = 200
+
         self.wips_container = WipContainer(self,
                                            self.wips,
                                            orientation="vertical",
@@ -157,7 +167,15 @@ class QueueApp(App):
                                            minimum_height=200)
         queue_scroll = ScrollView(bar_width=20)
         queue_scroll.add_widget(self.wips_container)
-        root.add_widget(queue_scroll)
+
+        tab = TabbedPanelItem(text="queue")
+        tab.add_widget(queue_scroll)
+        root.add_widget(tab)
+
+        tab = TabbedPanelItem(text="settings")
+        tab.add_widget(SettingsContainer(self))
+        root.add_widget(tab)
+
         self.check_for_projects()
         Clock.schedule_interval(lambda x: self.check_for_projects(), 10)
         return root
