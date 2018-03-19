@@ -1,0 +1,15 @@
+<defaults>
+    <default type="call" value="ma-ui-fold">
+        <parameter type="arg" value="--size=1500x800"/>
+    </default>
+    <default type="call" value="dss">
+        <parameter type="arg" value=""/>
+    </default>
+    <!-- use ruling for setsets? -->
+    <default type="setset" event="activate" attribute="zoom" value="5">
+        <parameter type="condition" attribute="width" comparator="less than" value = "4"/>
+        <parameter type="condition" attribute="width" comparator="greater than" value = "3"/>
+        <parameter type="condition" attribute="height" comparator="less than" value = "4"/>
+        <parameter type="condition" attribute="height" comparator="greater than" value = "3"/>
+    </default>
+</defaults>
