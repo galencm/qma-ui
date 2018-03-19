@@ -22,9 +22,13 @@ from ma_cli import data_models
 from ma_wip import visualizations
 from ma_wip.ling_classes import Rule, Group, Category
 
-r_ip, r_port = data_models.service_connection()
-binary_r = redis.StrictRedis(host=r_ip, port=r_port)
-redis_conn = redis.StrictRedis(host=r_ip, port=r_port, decode_responses=True)
+try:
+    r_ip, r_port = data_models.service_connection()
+    binary_r = redis.StrictRedis(host=r_ip, port=r_port)
+    redis_conn = redis.StrictRedis(host=r_ip, port=r_port, decode_responses=True)
+except redis.exceptions.ConnectionError:
+    pass
+
 
 class WipContainer(BoxLayout):
     def __init__(self, app, wipset, **kwargs):
@@ -149,10 +153,13 @@ class QueueApp(App):
         super(QueueApp, self).__init__()
 
     def check_for_projects(self):
-        for key in redis_conn.scan_iter("project:*"):
-            xml = redis_conn.get(key)
-            self.wips.add(xml)
-            self.wips_container.update()
+        try:
+            for key in redis_conn.scan_iter("project:*"):
+                xml = redis_conn.get(key)
+                self.wips.add(xml)
+                self.wips_container.update()
+        except redis.exceptions.ConnectionError:
+            pass
 
     def build(self):
         root = BoxLayout()
