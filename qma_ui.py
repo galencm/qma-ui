@@ -197,10 +197,16 @@ class SetItem(BoxLayout):
         self.item_color_button = Button(text= "", background_normal='', font_size=20)
         self.item_color_button.bind(on_press=self.pick_color)
         self.item_color_button.background_color = (*self.item.color.rgb, 1)
+        self.item_delete_button = Button(text="del")
+        self.item_delete_button.bind(on_press=lambda widget: self.remove())
         super(SetItem, self).__init__(**kwargs)
         self.add_widget(self.item_color_button)
         self.event_type_dd = self.create_dropdown(["activate","deactivate"])
         self.add_widget(self.event_type_dd)
+        self.add_widget(self.item_delete_button)
+
+    def remove(self):
+        self.parent.parent.remove_item(self)
 
     def action(self):
         self.item.action()
@@ -252,6 +258,10 @@ class SettingContainer(BoxLayout):
 
     def create_item(self):
         pass
+
+    def remove_item(self, item):
+        self.settings_container.remove_widget(item)
+        del item
 
 class QueueApp(App):
     def __init__(self, *args,**kwargs):
