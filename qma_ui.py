@@ -78,32 +78,80 @@ class WipContainer(BoxLayout):
     def __init__(self, app, wipset, **kwargs):
         self.app = app
         self.wipset = wipset
+        self.queue_order = {}
         super(WipContainer, self).__init__(**kwargs)
 
     def update(self):
         self.clear_widgets()
         for wip_name, wip in self.wipset.wips.items():
             w = WipItem(wip, height=400, size_hint_y=None)
+            try:
+                w.wip.queue_position = self.queue_order[w.wip.xml_str_hash]
+            except KeyError:
+                pass
+
             self.add_widget(w)
             w.update_actions()
+        self.sort_queue()
+
+    def sort_queue(self):
+        self.clear_widgets()
+        queued = {}
+
+        for wip_name, wip in self.wipset.wips.items():
+            if not wip.queue_position in queued:
+                queued[wip.queue_position] = []
+            queued[wip.queue_position].append(wip)
+            self.queue_order[wip.xml_str_hash] = wip.queue_position
+
+        order = sorted(queued.keys())
+        active = True
+        for key_name in order:
+            for wip in queued[key_name]:
+                w = WipItem(wip, height=400, size_hint_y=None)
+                if active is True:
+                    w.queue_input.background_color = (0, 1, 0, 1)
+                active = False
+                conditions = []
+                for s in self.app.setting_container.settings_container.children:
+                    if isinstance(s.item, SetSet):
+                        conditions.append(s.item)
+                        b = Button(text=str(s.item.conditions), background_normal='', background_color=(*s.item.color.rgb, 1))
+                        w.conditions_container.add_widget(b)
+                self.add_widget(w)
+                w.update_actions()
 
 class WipItem(BoxLayout):
     def __init__(self, wip, **kwargs):
         self.wip = wip
         self.image_project_dimensions = Image()
         self.image_project_overview = Image()
-        self.actions_container = BoxLayout(orientation="vertical")
+        self.actions_container = BoxLayout(orientation="horizontal", size_hint_y=None)
         super(WipItem, self).__init__(**kwargs)
-        #self.actions_container.add_widget(Label(text=str(self.wip.project)))
+        self.queue_input = TextInput(text=str(self.wip.queue_position), size_hint_x=None, multiline=False)
+        self.queue_input.bind(on_text_validate=lambda widget: self.update_queue_position())
+        self.add_widget(self.queue_input)
+
         self.add_widget(self.image_project_dimensions)
         self.add_widget(self.image_project_overview)
         self.add_widget(self.actions_container)
         overview = visualizations.project_overview(self.wip.project, 500, 200, orientation='horizontal', color_key=True, background_color=(50, 50, 50, 255))[1]
         self.image_project_overview.texture = CoreImage(overview, ext="jpg", keep_data=True).texture
-
+        self.image_project_overview.size = self.image_project_overview.texture_size
         dimensions = visualizations.project_dimensions(self.wip.project, 500, 150, scale=5, background_color=(50, 50, 50, 255))[1]
         self.image_project_dimensions.texture = CoreImage(dimensions, ext="jpg", keep_data=True).texture
+        self.image_project_dimensions.size = self.image_project_dimensions.texture_size
+        self.conditions_container = BoxLayout(orientation="horizontal", size_hint_y=None, size_hint_x=None)
+        self.add_widget(self.conditions_container)
+
         self.update_actions()
+
+    def update_queue_position(self):
+        try:
+            self.wip.queue_position = int(self.queue_input.text)
+            self.parent.sort_queue()
+        except Exception as ex:
+            print(ex)
 
     def update_actions(self):
         self.actions_container.clear_widgets()
@@ -185,6 +233,7 @@ class Wip(object):
     project = attr.ib(default=attr.Factory(dict))
     rules = attr.ib(default=attr.Factory(list))
     categories = attr.ib(default=attr.Factory(list))
+    queue_position = attr.ib(default=0)
 
     def activate(self):
         pass
