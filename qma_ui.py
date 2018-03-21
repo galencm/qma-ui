@@ -246,14 +246,24 @@ class SetItem(BoxLayout):
         self.item = item
         self.item_color_button = Button(text= "", background_normal='', font_size=20)
         self.item_color_button.bind(on_press=self.pick_color)
-        self.item_color_button.background_color = (*self.item.color.rgb, 1)
-        self.item_delete_button = Button(text="del")
+        if self.item is not None:
+            self.item_color_button.background_color = (*self.item.color.rgb, 1)
+        self.item_delete_button = Button(text="del", size_hint_x=None)
         self.item_delete_button.bind(on_press=lambda widget: self.remove())
         super(SetItem, self).__init__(**kwargs)
         self.add_widget(self.item_color_button)
-        self.event_type_dd = self.create_dropdown(["activate","deactivate"])
-        self.add_widget(self.event_type_dd)
+        self.item_container = BoxLayout(orientation="horizontal")
+        self.add_widget(self.item_container)
+        if item is not None:
+            self.type_fields()
+        else:
+            self.configure()
+
         self.add_widget(self.item_delete_button)
+
+    def configure(self):
+        type_dd = self.create_dropdown(["call", "setset"], callback=self.select_type)
+        self.add_widget(type_dd)
 
     def remove(self):
         self.parent.parent.remove_item(self)
@@ -261,7 +271,50 @@ class SetItem(BoxLayout):
     def action(self):
         self.item.action()
 
-    def create_dropdown(self, values):
+    def update_item_field(self, item, field, value, field_widget, split=False):
+        if split:
+            setattr(item, field, value.split(split))
+        else:
+            setattr(item, field, value)
+        field_widget.text = value
+        print(item)
+        #field_widget.hint_text = value
+
+    def select_type(self, item_type):
+        self.item_container.clear_widgets()
+        if item_type == "call":
+            self.item = Call()
+        if item_type == "setset":
+            self.item = SetSet()
+        self.item_color_button.background_color = (1, 1, 1, 1)
+        self.type_fields()
+
+    def type_fields(self):
+        type_widgets = None
+        if isinstance(self.item, Call):
+            type_widgets = BoxLayout(orientation="horizontal")
+            call_input = TextInput(hint_text="call", multiline=False)
+            call_input.bind(on_text_validate=lambda widget: self.update_item_field(self.item, "value", widget.text, widget))
+            type_widgets.add_widget(call_input)
+            args_input = TextInput(hint_text="comma separated args", multiline=False)
+            args_input.bind(on_text_validate=lambda widget: self.update_item_field(self.item, "args", widget.text, widget, split=","))
+
+            type_widgets.add_widget(args_input)
+        elif isinstance(self.item, SetSet):
+            type_widgets = BoxLayout(orientation="horizontal")
+            attribute_input = TextInput(hint_text="attribute to set", multiline=False)
+            attribute_input.bind(on_text_validate=lambda widget: self.update_item_field(self.item, "attribute", widget.text, widget))
+            value_input = TextInput(hint_text="set to value", multiline=False)
+            value_input.bind(on_text_validate=lambda widget: self.update_item_field(self.item, "value", widget.text, widget))
+            conditions_input = TextInput(hint_text="comma separated conditions", multiline=False)
+            conditions_input.bind(on_text_validate=lambda widget: self.update_item_field(self.item, "conditions", widget.text, widget, split=","))
+            type_widgets.add_widget(attribute_input)
+            type_widgets.add_widget(value_input)
+            type_widgets.add_widget(conditions_input)
+        if type_widgets is not None:
+            self.item_container.add_widget(type_widgets)
+
+    def create_dropdown(self, values, callback=None):
         d = DropDown()
         setattr(self, "dd_" + str(uuid.uuid4()), d)
         d_default = Button(text="")
@@ -271,6 +324,9 @@ class SetItem(BoxLayout):
             btn.bind(on_release=lambda btn: d.select(btn.text))
             d.add_widget(btn)
         d.bind(on_select=lambda instance, x: self.dropdown_update(instance, x, d_default))
+        if callback is not None:
+            d.bind(on_select=lambda instance, x: callback(x))
+
         return d_default
 
     def dropdown_update(self, widget, selected_value, default, *args):
@@ -282,12 +338,13 @@ class SetItem(BoxLayout):
         color_picker.open()
 
     def on_color(self, instance, *args):
-        self.item.color.rgb = instance.color[:3]
-        self.item_color_button.background_color = (*self.item.color.rgb, 1)
-        self.parent.parent.app.wips_container.update()
-
-    def set_type(self):
-        pass
+        # self.item may not exist
+        try:
+            self.item.color.rgb = instance.color[:3]
+            self.item_color_button.background_color = (*self.item.color.rgb, 1)
+            self.parent.parent.app.wips_container.update()
+        except AttributeError:
+            pass
 
 class SettingContainer(BoxLayout):
     def __init__(self, app, **kwargs):
@@ -295,7 +352,7 @@ class SettingContainer(BoxLayout):
         self.settings = self.app.settings
         self.settings_container = BoxLayout(orientation="vertical")
         super(SettingContainer, self).__init__(**kwargs)
-        self.create_button = Button(text="create")
+        self.create_button = Button(text="create", size_hint_x=None)
         self.create_button.bind(on_press=lambda widget: self.create_item())
         self.add_widget(self.settings_container)
         self.add_widget(self.create_button)
@@ -307,7 +364,8 @@ class SettingContainer(BoxLayout):
             self.settings_container.add_widget(widget)
 
     def create_item(self):
-        pass
+        w = SetItem(None)
+        self.settings_container.add_widget(w)
 
     def remove_item(self, item):
         self.settings_container.remove_widget(item)
