@@ -286,7 +286,7 @@ class QueueApp(App):
                 xml = redis_conn.get(key)
                 self.wips.add(xml)
                 self.wips_container.update()
-        except redis.exceptions.ConnectionError:
+        except (redis.exceptions.ConnectionError, TypeError) as ex:
             pass
 
     def load(self, file):
