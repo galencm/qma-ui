@@ -8,6 +8,7 @@ import hashlib
 import uuid
 import copy
 import subprocess
+import argparse
 import redis
 import attr
 from lxml import etree
@@ -268,7 +269,16 @@ class QueueApp(App):
         self.queued = {}
         self.wips = WipSet()
         self.settings = []
+        self.project_files = []
+        if "project_file" in kwargs:
+            self.project_files = kwargs["project_file"]
         super(QueueApp, self).__init__()
+
+    def load_xml_files(self):
+        for file in self.project_files:
+            with open(file, "r") as f:
+                self.wips.add(f.read())
+                self.wips_container.update()
 
     def check_for_projects(self):
         try:
@@ -335,9 +345,16 @@ class QueueApp(App):
         root.add_widget(tab)
 
         self.check_for_projects()
+        self.load_xml_files()
         Clock.schedule_interval(lambda x: self.check_for_projects(), 10)
         return root
 
 if __name__ == "__main__":
-    app = QueueApp()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--project-file",
+                        nargs='+',
+                        default=[],
+                        help="project file(s) in xml")
+    args = parser.parse_args()
+    app = QueueApp(**vars(args))
     app.run()
