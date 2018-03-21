@@ -58,7 +58,7 @@ class Call(object):
 @attr.s
 class SetSet(object):
     value = attr.ib(default="")
-    set_to = attr.ib(default="")
+    attribute = attr.ib(default="")
     conditions = attr.ib(default=attr.Factory(list))
     color = attr.ib(default=None)
 
@@ -304,7 +304,7 @@ class QueueApp(App):
                     obj_widget = SetItem(obj)
                     obj_widget.item = obj
                 elif default_type == "setset":
-                    obj = SetSet(set_to=str(default.xpath("./@value")[0]), value=str(default.xpath("./@value")[0]))
+                    obj = SetSet(attribute=str(default.xpath("./@attribute")[0]), value=str(default.xpath("./@value")[0]))
                     for param in default.xpath('//parameter'):
                         if str(param.xpath("./@type")[0]) == "condition":
                             obj.conditions.append("*")
