@@ -7,6 +7,8 @@
 import hashlib
 import uuid
 import copy
+import io
+import os
 import subprocess
 import argparse
 import redis
@@ -79,6 +81,7 @@ class WipContainer(BoxLayout):
         self.app = app
         self.wipset = wipset
         self.queue_order = {}
+        self.active_fold_thumbnail = None
         super(WipContainer, self).__init__(**kwargs)
 
     def update(self):
@@ -93,6 +96,15 @@ class WipContainer(BoxLayout):
             self.add_widget(w)
             w.update_actions()
         self.sort_queue()
+
+    def slurp_file_to_image(self, filename, container_widget):
+        # print("slurping {} to {}".format(filename, container_widget))
+        data = io.BytesIO(open(filename, "rb").read())
+        self.active_fold_thumbnail = CoreImage(io.BytesIO(open(filename, "rb").read()), ext="jpg").texture
+        container_widget.texture = CoreImage(data, ext="jpg").texture
+        # container_widget.size = container_widget.texture_size
+        # print("removing thumb {}".format(filename))
+        os.remove(filename)
 
     def sort_queue(self):
         self.clear_widgets()
@@ -111,7 +123,20 @@ class WipContainer(BoxLayout):
                 w = WipItem(wip, height=400, size_hint_y=None)
                 if active is True:
                     w.queue_input.background_color = (0, 1, 0, 1)
-                active = False
+                    # try to generate a fold thumbnail
+                    # set size to 1x1 so kivy window does not popup
+                    thumb_name = "/tmp/thumb_{}.jpg".format(str(uuid.uuid4())).replace("-","")
+                    thumb_call = "ma-ui-fold --size=1x1 -- --thumbnail-only --thumbnail-name {} --thumbnail-width 300 --thumbnail-height 300".format(thumb_name)
+                    p = subprocess.Popen(thumb_call.split(" "), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                    print("scheduling call ",active)
+                    Clock.schedule_once(lambda dt, w=w: self.slurp_file_to_image(thumb_name, w.image_project_folds), 7)
+                    # try to persist fold thumbnail by using previous version...
+                    try:
+                        w.image_project_folds.texture = self.active_fold_thumbnail#CoreImage(self.active_fold_thumbnail, ext="jpg").texture
+                    except Exception as ex:
+                        print(ex)
+
+                    active = False
                 conditions = []
                 for s in self.app.setting_container.settings_container.children:
                     if isinstance(s.item, SetSet):
@@ -126,6 +151,7 @@ class WipItem(BoxLayout):
         self.wip = wip
         self.image_project_dimensions = Image()
         self.image_project_overview = Image()
+        self.image_project_folds = Image(height=0, width=0)
         self.actions_container = BoxLayout(orientation="horizontal", size_hint_y=None)
         super(WipItem, self).__init__(**kwargs)
         self.queue_input = TextInput(text=str(self.wip.queue_position), size_hint_x=None, multiline=False)
@@ -134,7 +160,9 @@ class WipItem(BoxLayout):
 
         self.add_widget(self.image_project_dimensions)
         self.add_widget(self.image_project_overview)
+        self.add_widget(self.image_project_folds)
         self.add_widget(self.actions_container)
+
         overview = visualizations.project_overview(self.wip.project, 500, 200, orientation='horizontal', color_key=True, background_color=(50, 50, 50, 255))[1]
         self.image_project_overview.texture = CoreImage(overview, ext="jpg", keep_data=True).texture
         self.image_project_overview.size = self.image_project_overview.texture_size
