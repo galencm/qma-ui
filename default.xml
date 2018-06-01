@@ -1,8 +1,8 @@
 <defaults>
-    <default type="call" value="ma-ui-fold">
+    <default type="call" value="fold-ui">
         <parameter type="arg" value="--size=1500x800"/>
     </default>
-    <default type="call" value="dss">
+    <default type="call" value="dss-ui">
         <parameter type="arg" value=""/>
     </default>
     <!-- use ruling for setsets? -->
