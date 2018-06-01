@@ -210,7 +210,13 @@ class WipSet(object):
     def load_project_xml(self, xml):
         w = Wip()
         project_xml = {}
+        w.xml_str_hash =  hashlib.sha224(xml.encode()).hexdigest()
+        w.xml_str = xml
         xml = etree.fromstring(xml)
+
+        # tree = etree.ElementTree(xml)
+        # tree.write('{}.xml'.format(w.xml_str_hash), pretty_print=True)#, xml_declaration=True)
+
         w.project['categories'] = {}
         w.project['palette'] = {}
         w.project['order'] = {}
