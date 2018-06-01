@@ -126,10 +126,22 @@ class WipContainer(BoxLayout):
                     # try to generate a fold thumbnail
                     # set size to 1x1 so kivy window does not popup
                     thumb_name = "/tmp/thumb_{}.jpg".format(str(uuid.uuid4())).replace("-","")
-                    thumb_call = "ma-ui-fold --size=1x1 -- --thumbnail-only --thumbnail-name {} --thumbnail-width 300 --thumbnail-height 300".format(thumb_name)
+                    # write xml to file and pass as commandline argument to fold-ui
+                    # this might be done better by:
+                    #   * passing xml directly to fold-ui --xml
+                    #   * passing project key that contains xml to fold-ui --xml-key
+                    xml_file = "/tmp/{}.xml".format(wip.xml_str_hash)
+                    with open(xml_file, "w+") as f:
+                        f.write(wip.xml_str)
+                    # thumb call might be done better by:
+                    #   * move thumb generation to function that can be
+                    #     called without calling entire kivy app
+                    thumb_call = "ma-ui-fold --size=1x1 -- --thumbnail-only --thumbnail-name {} --thumbnail-width 300 --thumbnail-height 300 --xml-file {}".format(thumb_name, xml_file)
+                    # result of thumb image generation is checked
+                    # by a clock, this must be changed
                     p = subprocess.Popen(thumb_call.split(" "), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                    print("scheduling call ",active)
-                    Clock.schedule_once(lambda dt, w=w: self.slurp_file_to_image(thumb_name, w.image_project_folds), 7)
+                    print("scheduling call ", active)
+                    Clock.schedule_once(lambda dt, w=w: self.slurp_file_to_image(thumb_name, w.image_project_folds), 15)
                     # try to persist fold thumbnail by using previous version...
                     try:
                         w.image_project_folds.texture = self.active_fold_thumbnail#CoreImage(self.active_fold_thumbnail, ext="jpg").texture
